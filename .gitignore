@@ -250,19 +250,8 @@ outputs
 wandb
 tmp
 /checkpoints/
-test.mp4
-prepared.mp4
-test - Copy.mp4
-init_latents.pt
 datasets/
-convnext-tiny_watermarks_detector.pth
-watermarked_videos/
 res.jpg
 corrected_image_color.jpg
-watermark_removal/debug/
 data.bin
 embeddings.db
-watermark_removal/watermark_results/
-results - Copy/
-results - Copy (2)/
-results - Copy (3)/

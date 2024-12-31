@@ -4,16 +4,25 @@ import torch
 import faiss
 import logging
 import numpy as np
-
+import requests
+from tqdm import tqdm  # For progress bars
 from PIL import Image
 from pathlib import Path
-from .database import get_connection  # Make sure this is accessible to ComfyUI
+from .database import get_connection  # Ensure accessible to ComfyUI
 from torchvision import transforms
 
 logger = logging.getLogger(__name__)
 
-# Global references to avoid re-loading model/index each time
-INDEX_PATH = "data.bin"
+# Define URLs for data.bin and embeddings.db on HuggingFace
+DATA_BIN_URL = "https://huggingface.co/iggy101/MotionVideoSearch/resolve/main/data.bin"
+EMBEDDINGS_DB_URL = "https://huggingface.co/iggy101/MotionVideoSearch/resolve/main/embeddings.db"
+
+# Directory to store downloaded files
+DATA_DIR = Path(__file__).parent / "data"
+DATA_DIR.mkdir(parents=True, exist_ok=True)
+
+INDEX_PATH = DATA_DIR / "data.bin"
+EMBEDDINGS_DB_PATH = DATA_DIR / "embeddings.db"
 EMBEDDING_DIM = 768
 
 _dinov2_vitb14_reg = None
@@ -23,11 +32,49 @@ _transform = transforms.Compose([
     transforms.ToTensor(),
 ])
 
+def download_file(url, dest_path):
+    """
+    Downloads a file from the specified URL to the destination path with a progress bar.
+    """
+    try:
+        response = requests.get(url, stream=True)
+        response.raise_for_status()
+        total_size = int(response.headers.get('content-length', 0))
+        with open(dest_path, 'wb') as f, tqdm(
+            desc=f"Downloading {dest_path.name}",
+            total=total_size,
+            unit='iB',
+            unit_scale=True,
+            unit_divisor=1024,
+        ) as bar:
+            for data in response.iter_content(chunk_size=1024):
+                size = f.write(data)
+                bar.update(size)
+        logger.info(f"Downloaded {dest_path.name} successfully.")
+    except requests.exceptions.RequestException as e:
+        logger.error(f"Failed to download {url}: {e}")
+        raise
+
+def ensure_file_exists(file_path, url):
+    """
+    Ensures that the file exists locally; downloads it from the URL if it does not.
+    """
+    if not file_path.exists():
+        logger.info(f"{file_path.name} not found. Downloading from HuggingFace...")
+        download_file(url, file_path)
+    else:
+        logger.info(f"{file_path.name} already exists.")
+
 def load_model_and_index():
     """
     Loads DINOv2 model and the FAISS index (if not already loaded).
+    Downloads required files if they are missing.
     """
     global _dinov2_vitb14_reg, _faiss_index
+
+    # Ensure that data.bin and embeddings.db are present
+    ensure_file_exists(INDEX_PATH, DATA_BIN_URL)
+    ensure_file_exists(EMBEDDINGS_DB_PATH, EMBEDDINGS_DB_URL)
 
     # Load the model lazily
     if _dinov2_vitb14_reg is None:
@@ -39,13 +86,12 @@ def load_model_and_index():
 
     # Load or initialize the FAISS index
     if _faiss_index is None:
-        if not Path(INDEX_PATH).exists():
+        if not INDEX_PATH.exists():
             raise FileNotFoundError(f"FAISS index not found at {INDEX_PATH}. Please run the 'store' command first.")
         logger.info(f"Loading FAISS index from {INDEX_PATH}...")
-        _faiss_index = faiss.read_index(INDEX_PATH)
+        _faiss_index = faiss.read_index(str(INDEX_PATH))
 
     return _dinov2_vitb14_reg, _faiss_index
-
 
 class IG_MotionVideoSearch:
     """
@@ -67,6 +113,7 @@ class IG_MotionVideoSearch:
     FUNCTION = "search"
 
     CATEGORY = "Motion Video DB"  # Appears in ComfyUI under this category in the node menu
+
     @classmethod
     def IS_CHANGED(cls):
         """
@@ -78,7 +125,7 @@ class IG_MotionVideoSearch:
     def search(self, image, top_k):
         """
         Perform the search using the loaded FAISS index and DINOv2 model.
-        
+
         :param image: A ComfyUI image dictionary
         :param top_k: Number of top results to retrieve
         :return: (string,) with the search results
