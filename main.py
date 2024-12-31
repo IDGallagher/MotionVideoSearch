@@ -46,7 +46,11 @@ transform = transforms.Compose([
 EMBEDDING_DIM = 768
 
 # Paths
-INDEX_PATH = "data.bin"
+DATA_DIR = Path(__file__).parent / "data"
+DATA_DIR.mkdir(parents=True, exist_ok=True)
+INDEX_PATH = DATA_DIR / "data.bin"
+
+logger.info(f"Index path {INDEX_PATH}")
 
 @cli.command()
 def store(
@@ -181,7 +185,7 @@ def store(
                 if success:
                     processed_entries += 1
                     # Save updated FAISS index periodically or after each successful insertion
-                    faiss.write_index(index, INDEX_PATH)
+                    faiss.write_index(index, str(INDEX_PATH))
 
                 # Optional: Log progress every N entries
                 if processed_entries % 100 == 0:
@@ -228,7 +232,7 @@ def search(
     # Load FAISS index
     logger.info(f"Loading FAISS index from '{INDEX_PATH}'...")
     try:
-        index = faiss.read_index(INDEX_PATH)
+        index = faiss.read_index(str(INDEX_PATH))
     except Exception as e:
         logger.error(f"Failed to load FAISS index: {e}")
         raise typer.Exit(code=1)

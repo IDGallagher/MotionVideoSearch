@@ -5,10 +5,13 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-DB_PATH = Path("embeddings.db")
+# Directory to store downloaded files
+DATA_DIR = Path(__file__).parent / "data"
+DATA_DIR.mkdir(parents=True, exist_ok=True)
+EMBEDDINGS_DB_PATH = DATA_DIR / "embeddings.db"
 
 def get_connection():
-    conn = sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(EMBEDDINGS_DB_PATH)
     return conn
 
 def initialize_db():

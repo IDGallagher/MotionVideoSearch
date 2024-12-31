@@ -5,7 +5,7 @@ import faiss
 import logging
 import numpy as np
 import requests
-from tqdm import tqdm  # For progress bars
+from tqdm import tqdm
 from PIL import Image
 from pathlib import Path
 from .database import get_connection  # Ensure accessible to ComfyUI
@@ -14,8 +14,8 @@ from torchvision import transforms
 logger = logging.getLogger(__name__)
 
 # Define URLs for data.bin and embeddings.db on HuggingFace
-DATA_BIN_URL = "https://huggingface.co/iggy101/MotionVideoSearch/resolve/main/data.bin"
-EMBEDDINGS_DB_URL = "https://huggingface.co/iggy101/MotionVideoSearch/resolve/main/embeddings.db"
+DATA_BIN_URL = "https://huggingface.co/your-username/your-repo/raw/main/data.bin"
+EMBEDDINGS_DB_URL = "https://huggingface.co/your-username/your-repo/raw/main/embeddings.db"
 
 # Directory to store downloaded files
 DATA_DIR = Path(__file__).parent / "data"
@@ -126,23 +126,38 @@ class IG_MotionVideoSearch:
         """
         Perform the search using the loaded FAISS index and DINOv2 model.
 
-        :param image: A ComfyUI image dictionary
+        :param image: A torch.Tensor, shape [batch_size, C, H, W]
         :param top_k: Number of top results to retrieve
         :return: (string,) with the search results
         """
+        # Log input details for debugging
+        logger.debug(f"Image type: {type(image)}")
+        logger.debug(f"Image shape: {image.shape}")
+        logger.debug(f"Image dtype: {image.dtype}")
+
         # 1. Load model and index if needed
         model, index = load_model_and_index()
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
         # 2. Convert ComfyUI image (torch tensor) into a PIL Image
-        #    By default, ComfyUI images are float16 or float32, shape [C, H, W], range 0..1
-        c_img = image["image"]  # This is a torch.Tensor
-        # Ensure 0..1 range, convert to uint8, and create PIL
-        c_img = c_img.squeeze(0).clamp(0, 1)  # Remove extra batch dim if present
+        #    By default, ComfyUI images are float16 or float32, shape [batch, C, H, W], range 0..1
+        c_img = image  # Directly use the tensor without indexing
+        if c_img.ndim == 4:
+            # Assume shape is [batch_size, C, H, W]
+            if c_img.size(0) > 1:
+                logger.warning("Received batch size >1. Only processing the first image in the batch.")
+                c_img = c_img[0]
+            else:
+                c_img = c_img.squeeze(0)  # Remove the batch dimension
+        elif c_img.ndim != 3:
+            raise ValueError(f"Expected image tensor to have 3 or 4 dimensions, got {c_img.ndim}")
+
+        # Ensure values are in [0, 1] range
+        c_img = c_img.clamp(0, 1)
+
+        # Convert to uint8 and numpy array
         np_img = (c_img * 255.0).byte().cpu().numpy()
-        if np_img.shape[0] == 3:
-            # shape: (C, H, W) => (H, W, C)
-            np_img = np.transpose(np_img, (1, 2, 0))
+        # Convert to PIL image
         pil_img = Image.fromarray(np_img, mode='RGB')
 
         # 3. Apply the same resizing logic as your main.py does (multiple of 14, etc.)
