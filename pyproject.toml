@@ -1,0 +1,15 @@
+[project]
+name = "motion-video-search"
+description = "Search an index of videos by motion image"
+version = "0.1.0"
+license = { file = "LICENSE" }
+dependencies = []
+
+[project.urls]
+Repository = "https://github.com/l-comm/MotionVideoSearch"
+
+#  Used by Comfy Registry https://comfyregistry.org
+[tool.comfy]
+PublisherId = "l-comm"
+DisplayName = "Motion-Video-Search"
+Icon = ""
