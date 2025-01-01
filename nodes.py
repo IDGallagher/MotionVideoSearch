@@ -108,8 +108,8 @@ class IG_MotionVideoSearch:
             }
         }
 
-    RETURN_TYPES = ("STRING",)
-    RETURN_NAMES = ("search_results",)
+    RETURN_TYPES = ("STRING", "STRING", "STRING", "STRING", "STRING")
+    RETURN_NAMES = ("url_1", "url_2", "url_3", "url_4", "url_5")
     FUNCTION = "search"
 
     CATEGORY = "Motion Video DB"  # Appears in ComfyUI under this category in the node menu
@@ -128,7 +128,7 @@ class IG_MotionVideoSearch:
 
         :param image: A torch.Tensor, shape [batch_size, C, H, W]
         :param top_k: Number of top results to retrieve
-        :return: (string,) with the search results
+        :return: 5 separate URLs for the search results
         """
         # Log input details for debugging
         logger.debug(f"Image type: {type(image)}")
@@ -180,22 +180,22 @@ class IG_MotionVideoSearch:
 
         # Handle edge cases
         if ids.size == 0 or (ids.size == 1 and ids[0][0] == -1):
-            return ("No embeddings found in the FAISS index.",)
+            return ("No embeddings found in the FAISS index.", "", "", "", "")
 
         # 6. Retrieve metadata from SQLite
         conn = get_connection()
         cursor = conn.cursor()
 
-        # 7. Format the results as a single string
-        results_str = []
-        for rank, (dist, uid) in enumerate(zip(distances[0], ids[0]), start=1):
+        urls = [""] * 5  # Initialize list of 5 URL strings
+        for rank, uid in enumerate(ids[0][:5]):  # Only process up to the top 5 results
+            if rank >= 5:
+                break
             if uid == -1:
-                results_str.append(f"{rank}. [No valid ID] - Distance: {dist:.4f}")
                 continue
 
             cursor.execute(
                 """
-                SELECT videos.url, videos.description, embeddings.start_time
+                SELECT videos.url
                 FROM embeddings
                 JOIN videos ON embeddings.video_id = videos.id
                 WHERE embeddings.id = ?
@@ -204,15 +204,8 @@ class IG_MotionVideoSearch:
             )
             row = cursor.fetchone()
             if row:
-                url, description, start_time = row
-                results_str.append(
-                    f"{rank}. URL: {url}, Desc: {description}, Timestamp: {start_time}s, Dist: {dist:.4f}"
-                )
-            else:
-                results_str.append(f"{rank}. [Missing DB row for ID {uid}], Dist: {dist:.4f}")
+                urls[rank] = row[0]
 
         conn.close()
 
-        # Combine all lines into one output
-        final_text = "\n".join(results_str)
-        return (final_text,)
+        return tuple(urls)
