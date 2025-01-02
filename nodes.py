@@ -108,19 +108,11 @@ class IG_MotionVideoSearch:
             }
         }
 
-    RETURN_TYPES = ("STRING", "STRING", "STRING", "STRING", "STRING")
-    RETURN_NAMES = ("url_1", "url_2", "url_3", "url_4", "url_5")
+    RETURN_TYPES = ("STRING", "STRING", "STRING", "STRING", "STRING", "STRING")
+    RETURN_NAMES = ("url_1", "url_2", "url_3", "url_4", "url_5", "status")
     FUNCTION = "search"
 
     CATEGORY = "Motion Video DB"  # Appears in ComfyUI under this category in the node menu
-
-    @classmethod
-    def IS_CHANGED(cls):
-        """
-        If you want caching behavior or re-run logic, adjust here.
-        Returning True means ComfyUI won't try to cache results from previous runs.
-        """
-        return True
 
     def search(self, image, top_k):
         """
@@ -128,7 +120,7 @@ class IG_MotionVideoSearch:
 
         :param image: A torch.Tensor, shape [batch_size, C, H, W]
         :param top_k: Number of top results to retrieve
-        :return: 5 separate URLs for the search results
+        :return: 5 separate URLs for the search results and a status string with scores
         """
         # Log input details for debugging
         logger.debug(f"Image type: {type(image)}")
@@ -140,12 +132,11 @@ class IG_MotionVideoSearch:
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
         # 2. Convert ComfyUI image (torch tensor) into a PIL Image
-        #    By default, ComfyUI images are float16 or float32, shape [batch, C, H, W], range 0..1
         c_img = image  # Directly use the tensor without indexing
         if c_img.ndim == 4:
             # Assume shape is [batch_size, C, H, W]
             if c_img.size(0) > 1:
-                logger.warning("Received batch size >1. Only processing the first image in the batch.")
+                logger.warning("Received batch size > 1. Only processing the first image in the batch.")
                 c_img = c_img[0]
             else:
                 c_img = c_img.squeeze(0)  # Remove the batch dimension
@@ -161,16 +152,14 @@ class IG_MotionVideoSearch:
         pil_img = Image.fromarray(np_img, mode='RGB')
 
         # 3. Apply the same resizing logic as your main.py does (multiple of 14, etc.)
-        #    We'll replicate that as best we can
         with torch.no_grad():
-            # Transform and then adjust dimension to multiple-of-14 if needed
             tensor_img = _transform(pil_img).unsqueeze(0).to(device)  # shape [1, C, H, W]
             _, _, h, w = tensor_img.shape
             new_h = (h // 14) * 14
             new_w = (w // 14) * 14
             h_start = (h - new_h) // 2
             w_start = (w - new_w) // 2
-            tensor_img = tensor_img[:, :, h_start : h_start + new_h, w_start : w_start + new_w]
+            tensor_img = tensor_img[:, :, h_start: h_start + new_h, w_start: w_start + new_w]
 
             # 4. Get the embedding
             embedding = model(tensor_img).cpu().numpy().astype("float32")
@@ -180,17 +169,20 @@ class IG_MotionVideoSearch:
 
         # Handle edge cases
         if ids.size == 0 or (ids.size == 1 and ids[0][0] == -1):
-            return ("No embeddings found in the FAISS index.", "", "", "", "")
+            return ("No embeddings found in the FAISS index.", "", "", "", "", "No scores available.")
 
         # 6. Retrieve metadata from SQLite
         conn = get_connection()
         cursor = conn.cursor()
 
         urls = [""] * 5  # Initialize list of 5 URL strings
-        for rank, uid in enumerate(ids[0][:5]):  # Only process up to the top 5 results
-            if rank >= 5:
+        results_str = []
+
+        for rank, (dist, uid) in enumerate(zip(distances[0], ids[0]), start=1):
+            if rank > 5:
                 break
             if uid == -1:
+                results_str.append(f"{rank}. [No valid ID] - Distance: {dist:.4f}")
                 continue
 
             cursor.execute(
@@ -204,8 +196,12 @@ class IG_MotionVideoSearch:
             )
             row = cursor.fetchone()
             if row:
-                urls[rank] = row[0]
+                urls[rank - 1] = row[0]
+                results_str.append(f"{rank}. Distance: {dist:.4f}")
+            else:
+                results_str.append(f"{rank}. [Missing DB row for ID {uid}], Distance: {dist:.4f}")
 
         conn.close()
 
-        return tuple(urls)
+        status = "\n".join(results_str)
+        return (*urls, status)
