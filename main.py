@@ -151,13 +151,13 @@ def store(
             logger.info(f"[CONCURRENT] Created new subdir -> {subdir}")
 
         # Now override paths in memory
-        new_db_path = subdir / "data.sqlite"
+        # new_db_path = subdir / "data.sqlite"
         new_index_path = subdir / "index.faiss"
 
-        set_db_path(new_db_path)  # Override EMBEDDINGS_DB_PATH
+        # set_db_path(new_db_path)  # Override EMBEDDINGS_DB_PATH
         INDEX_PATH = new_index_path  # We'll rely on the global index path variable
 
-        logger.info(f"[CONCURRENT] Overriding EMBEDDINGS_DB_PATH -> {new_db_path}")
+        # logger.info(f"[CONCURRENT] Overriding EMBEDDINGS_DB_PATH -> {new_db_path}")
         logger.info(f"[CONCURRENT] Overriding INDEX_PATH -> {new_index_path}")
     else:
         logger.info("Concurrent store mode not activated. Using default data/ directory.")
@@ -259,6 +259,39 @@ def store(
         logger.error("Specify dir or csv!")
         raise typer.Exit(code=1)
 
+@cli.command()
+def combine():
+    """
+    Combine multiple FAISS indexes from numbered subdirectories under ./data
+    into one index.faiss in the main ./data folder.
+    """
+    # 1) Gather subdirectories that contain "index.faiss"
+    subdirs = []
+    for item in DATA_DIR.iterdir():
+        if item.is_dir() and item.name.isdigit():
+            sub_index = item / "index.faiss"
+            if sub_index.exists():
+                subdirs.append(sub_index)
+
+    if not subdirs:
+        logger.error("No subdirectory indexes found. Nothing to combine.")
+        raise typer.Exit(code=1)
+
+    logger.info(f"Found {len(subdirs)} indexes to combine: {subdirs}")
+
+    # 2) Read the first index to serve as a "base"
+    combined_index = faiss.read_index(str(subdirs[0]))
+    logger.info(f"Loaded first index from: {subdirs[0]}")
+
+    # 3) For the remaining sub-indexes, merge them into the base
+    for sub_index_path in subdirs[1:]:
+        idx = faiss.read_index(str(sub_index_path))
+        combined_index.merge_from(idx)
+        logger.info(f"Merged index from {sub_index_path}")
+
+    # 4) Write out the resulting combined index
+    faiss.write_index(combined_index, str(INDEX_PATH))
+    logger.info(f"Combined index saved to: {INDEX_PATH}")
 
 
 @cli.command()

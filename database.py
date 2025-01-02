@@ -20,7 +20,7 @@ def set_db_path(db_path: Path):
     logger.info(f"[CONCURRENT] Overriding EMBEDDINGS_DB_PATH -> {EMBEDDINGS_DB_PATH}")
 
 def get_connection():
-    conn = sqlite3.connect(EMBEDDINGS_DB_PATH)
+    conn = sqlite3.connect(EMBEDDINGS_DB_PATH, timeout=2.0)
     return conn
 
 def initialize_db():
