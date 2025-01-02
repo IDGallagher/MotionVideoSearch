@@ -1,1 +1,0 @@
-python main.py search --image "C:\dev\MotionVideoSearch\results\track_cartwheel_2.25.png"

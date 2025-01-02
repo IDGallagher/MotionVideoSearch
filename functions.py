@@ -86,8 +86,6 @@ def store_chunk(video, start_time, end_time, video_metadata, embedding_model, in
         output_image_path.parent.mkdir(parents=True, exist_ok=True)
         vutils.save_image(frame, str(output_image_path))
         logger.debug(f"Saved processed frame to {output_image_path}")
-    else:
-        logger.debug("Debug mode is OFF, skipping saving debug frame.")
 
     # Insert embedding into FAISS index and SQLite
     video_id = video_metadata['db_id']
@@ -213,11 +211,9 @@ def store_video(video_metadata, embedding_model, index, max_time=1.0, debug=Fals
             
             # Save the processed video chunk
             if debug:
-                output_video_path = Path('debug') / f'test_vid_{db_video_metadata['id']}_{start_time}.mp4'
+                output_video_path = Path('debug') / f'test_vid_{db_video_metadata["id"]}_{start_time}.mp4'
                 save_pixel_values_as_video(pixel_values, output_video_path)
                 logger.info(f"Saved pixel values as video: {output_video_path}")
-            else:
-                logger.debug("Debug mode is OFF, skipping saving video chunk.")
             
             # Store the embedding chunk
             end_time = start_time + sampling_interval
