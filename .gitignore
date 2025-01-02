@@ -1,5 +1,6 @@
 temp/
 results/
+debug/
 videos/
 
 # Created by https://www.toptal.com/developers/gitignore/api/linux,windows,macos,visualstudiocode,python

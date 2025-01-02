@@ -119,7 +119,7 @@ def store(
     # Load or initialize FAISS index
     if Path(INDEX_PATH).exists():
         logger.info("Loading existing FAISS index...")
-        index = faiss.read_index(INDEX_PATH)
+        index = faiss.read_index(str(INDEX_PATH))
     else:
         logger.info("Initializing new FAISS index...")
         base_index = faiss.IndexFlatL2(EMBEDDING_DIM)
