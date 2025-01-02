@@ -130,12 +130,24 @@ def store(
             help="Integer subdirectory for concurrent mode. If not specified, a new one will be created automatically.",
         ),
     ] = None,
+    debug: Annotated[
+        bool,
+        typer.Option(
+            "--debug",
+            help="Enable debug mode to save frames and videos to the debug folder.",
+        ),
+    ] = False,
 ):
     """
     Store videos from a directory and/or a CSV file into the vector DB.
     """
     # 1. Handle concurrency: Decide if we override DB path and index path
     global INDEX_PATH  # We'll reassign if needed
+
+    if debug:
+        logger.info("Debug mode is ON. Images and videos will be saved in the debug folder.")
+    else:
+        logger.info("Debug mode is OFF. Skipping saving debug frames and videos.")
 
     if concurrent_store:
         logger.info("[CONCURRENT] concurrent_store mode is ON.")
@@ -202,7 +214,7 @@ def store(
                         'db_id': None,  # Will be set in store_video
                         'saved_up_to': 0.0,
                     }
-                    store_video(video_metadata, dinov2_vitb14_reg, index, max_time)
+                    store_video(video_metadata, dinov2_vitb14_reg, index, max_time, debug=debug)
                     # Save updated FAISS index
                     faiss.write_index(index, INDEX_PATH)
         logger.info("Storage complete. FAISS index saved.")
@@ -243,7 +255,7 @@ def store(
                     'saved_up_to': 0.0,
                 }
 
-                success = store_video(video_metadata, dinov2_vitb14_reg, index, max_time)
+                success = store_video(video_metadata, dinov2_vitb14_reg, index, max_time, debug=debug)
                 if success:
                     processed_entries += 1
                     # Save updated FAISS index periodically or after each successful insertion

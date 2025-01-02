@@ -55,7 +55,7 @@ def save_pixel_values_as_video(pixel_values, output_path):
 
     logger.info(f"Video saved as {output_path}")
 
-def store_chunk(video, start_time, end_time, video_metadata, embedding_model, index):
+def store_chunk(video, start_time, end_time, video_metadata, embedding_model, index, debug=False):
     """
     Processes a video chunk, extracts and stores its embedding, and updates the FAISS index and SQLite database.
     """
@@ -80,11 +80,14 @@ def store_chunk(video, start_time, end_time, video_metadata, embedding_model, in
     logger.debug(f"Generated embedding with shape {embedding.shape}")
 
     # Save the processed frame image for reference
-    path = Path(video_metadata['url'])
-    output_image_path = Path('debug') / f'track_{path.stem}_{start_time}.png'
-    output_image_path.parent.mkdir(parents=True, exist_ok=True)  # Ensure the directory exists
-    vutils.save_image(frame, str(output_image_path))
-    logger.debug(f"Saved processed frame to {output_image_path}")
+    if debug:
+        path = Path(video_metadata['url'])
+        output_image_path = Path('debug') / f'track_{path.stem}_{start_time}.png'
+        output_image_path.parent.mkdir(parents=True, exist_ok=True)
+        vutils.save_image(frame, str(output_image_path))
+        logger.debug(f"Saved processed frame to {output_image_path}")
+    else:
+        logger.debug("Debug mode is OFF, skipping saving debug frame.")
 
     # Insert embedding into FAISS index and SQLite
     video_id = video_metadata['db_id']
@@ -117,7 +120,7 @@ def log_gpu_memory(stage=""):
     else:
         logger.info("CUDA is not available.")
 
-def store_video(video_metadata, embedding_model, index, max_time=1.0):
+def store_video(video_metadata, embedding_model, index, max_time=1.0, debug=False):
     """
     Processes and stores video embeddings up to a specified maximum time.
     """
@@ -209,13 +212,16 @@ def store_video(video_metadata, embedding_model, index, max_time=1.0):
                 pixel_values = remove_watermark_batch(pixel_values, final_x, final_y)
             
             # Save the processed video chunk
-            output_video_path = Path('debug') / f'test_vid_{db_video_metadata["id"]}_{start_time}.mp4'
-            save_pixel_values_as_video(pixel_values, output_video_path)
-            logger.info(f"Saved pixel values as video: {output_video_path}")
+            if debug:
+                output_video_path = Path('debug') / f'test_vid_{db_video_metadata['id']}_{start_time}.mp4'
+                save_pixel_values_as_video(pixel_values, output_video_path)
+                logger.info(f"Saved pixel values as video: {output_video_path}")
+            else:
+                logger.debug("Debug mode is OFF, skipping saving video chunk.")
             
             # Store the embedding chunk
             end_time = start_time + sampling_interval
-            store_chunk(pixel_values, start_time, end_time, video_metadata, embedding_model, index)
+            store_chunk(pixel_values, start_time, end_time, video_metadata, embedding_model, index, debug=debug)
 
             # Explicitly delete frames and pixel_values to free GPU memory
             del frames, pixel_values
