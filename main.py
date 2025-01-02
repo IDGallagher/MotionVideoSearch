@@ -6,14 +6,14 @@ import faiss
 from rich.logging import RichHandler
 from rich.console import Console
 from pathlib import Path
-from typing import Annotated
+from typing import Annotated, Optional
 from functions import store_video
 from PIL import Image
 import torchvision.transforms as transforms
 import csv
 import torch.nn.functional as F
 
-from database import initialize_db, get_connection  # Import updated database functions
+from database import initialize_db, get_connection, set_db_path 
 
 cli: typer.Typer = typer.Typer(
     context_settings=dict(help_option_names=["-h", "--help"]),
@@ -48,9 +48,27 @@ EMBEDDING_DIM = 768
 # Paths
 DATA_DIR = Path(__file__).parent / "data"
 DATA_DIR.mkdir(parents=True, exist_ok=True)
-INDEX_PATH = DATA_DIR / "data.bin"
+INDEX_PATH = DATA_DIR / "index.faiss"
 
 logger.info(f"Index path {INDEX_PATH}")
+
+def get_next_available_directory(base_dir: Path) -> Path:
+    """
+    Returns a new subdirectory named with the next integer, starting from 0.
+    If 0 already exists, it tries 1, etc.
+    """
+    existing_indices = []
+    for child in base_dir.iterdir():
+        if child.is_dir() and child.name.isdigit():
+            existing_indices.append(int(child.name))
+    if not existing_indices:
+        next_index = 0
+    else:
+        next_index = max(existing_indices) + 1
+
+    new_subdir = base_dir / str(next_index)
+    new_subdir.mkdir(parents=True, exist_ok=True)
+    return new_subdir
 
 @cli.command()
 def store(
@@ -96,29 +114,73 @@ def store(
             help="The CSV entry number to start processing from (1-based index)",
         ),
     ] = 1,  # Added start_entry option
+    concurrent_store: Annotated[
+        bool,
+        typer.Option(
+            "--concurrent-store",
+            "-cs",
+            help="If passed, store data.sqlite and index.faiss in a numbered subdirectory under ./data",
+        ),
+    ] = False,
+    concurrent_index: Annotated[
+        Optional[int],
+        typer.Option(
+            "--concurrent-index",
+            "-ci",
+            help="Integer subdirectory for concurrent mode. If not specified, a new one will be created automatically.",
+        ),
+    ] = None,
 ):
     """
     Store videos from a directory and/or a CSV file into the vector DB.
     """
-    # Validate start_entry
+    # 1. Handle concurrency: Decide if we override DB path and index path
+    global INDEX_PATH  # We'll reassign if needed
+
+    if concurrent_store:
+        logger.info("[CONCURRENT] concurrent_store mode is ON.")
+
+        if concurrent_index is not None:
+            # Subdirectory based on user request
+            subdir = DATA_DIR / str(concurrent_index)
+            subdir.mkdir(parents=True, exist_ok=True)
+            logger.info(f"[CONCURRENT] Using user-specified subdir -> {subdir}")
+        else:
+            # Automatically find next subdirectory
+            subdir = get_next_available_directory(DATA_DIR)
+            logger.info(f"[CONCURRENT] Created new subdir -> {subdir}")
+
+        # Now override paths in memory
+        new_db_path = subdir / "data.sqlite"
+        new_index_path = subdir / "index.faiss"
+
+        set_db_path(new_db_path)  # Override EMBEDDINGS_DB_PATH
+        INDEX_PATH = new_index_path  # We'll rely on the global index path variable
+
+        logger.info(f"[CONCURRENT] Overriding EMBEDDINGS_DB_PATH -> {new_db_path}")
+        logger.info(f"[CONCURRENT] Overriding INDEX_PATH -> {new_index_path}")
+    else:
+        logger.info("Concurrent store mode not activated. Using default data/ directory.")
+
+    # 2. Validate start_entry
     if start_entry < 1:
         logger.error("start_entry must be a positive integer starting from 1.")
         raise typer.Exit(code=1)
 
-    # Initialize the database
+    # 3. Initialize the (potentially new) database
     initialize_db()
     conn = get_connection()
     conn.close()
 
-    # Embedding model
-    dinov2_vitb14_reg = torch.hub.load('facebookresearch/dinov2', 'dinov2_vitb14_reg')
-    device = torch.device('cuda' if torch.cuda.is_available() else "cpu")
+    # 4. Load embedding model
+    dinov2_vitb14_reg = torch.hub.load("facebookresearch/dinov2", "dinov2_vitb14_reg")
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     dinov2_vitb14_reg.to(device)
-    dinov2_vitb14_reg.eval()  # Set model to evaluation mode
+    dinov2_vitb14_reg.eval()
 
-    # Load or initialize FAISS index
-    if Path(INDEX_PATH).exists():
-        logger.info("Loading existing FAISS index...")
+    # 5. Load or initialize FAISS index from the correct path
+    if INDEX_PATH.exists():
+        logger.info(f"Loading existing FAISS index from '{INDEX_PATH}'...")
         index = faiss.read_index(str(INDEX_PATH))
     else:
         logger.info("Initializing new FAISS index...")
@@ -194,7 +256,8 @@ def store(
         logger.info(f"Storage complete. {processed_entries} entries processed and FAISS index saved.")
 
     else:
-       logger.error("Specify dir or csv!")
+        logger.error("Specify dir or csv!")
+        raise typer.Exit(code=1)
 
 
 

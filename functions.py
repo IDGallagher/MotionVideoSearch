@@ -55,7 +55,7 @@ def save_pixel_values_as_video(pixel_values, output_path):
 
     logger.info(f"Video saved as {output_path}")
 
-def store_chunk(video, start_time, video_metadata, embedding_model, index):
+def store_chunk(video, start_time, end_time, video_metadata, embedding_model, index):
     """
     Processes a video chunk, extracts and stores its embedding, and updates the FAISS index and SQLite database.
     """
@@ -95,8 +95,8 @@ def store_chunk(video, start_time, video_metadata, embedding_model, index):
     logger.info(f"Added embedding for video ID {video_id} at {start_time}s to FAISS index with embedding ID {embedding_db_id}")
 
     # Update the video's saved_up_to time
-    if start_time > video_metadata.get('saved_up_to', 0.0):
-        update_video_saved_up_to(video_id, start_time)
+    if end_time > video_metadata.get('saved_up_to', 0.0):
+        update_video_saved_up_to(video_id, end_time)
 
     # Explicitly delete tensors to free GPU memory
     del frame, embeddings, embedding
@@ -214,7 +214,8 @@ def store_video(video_metadata, embedding_model, index, max_time=1.0):
             logger.info(f"Saved pixel values as video: {output_video_path}")
             
             # Store the embedding chunk
-            store_chunk(pixel_values, start_time, video_metadata, embedding_model, index)
+            end_time = start_time + sampling_interval
+            store_chunk(pixel_values, start_time, end_time, video_metadata, embedding_model, index)
 
             # Explicitly delete frames and pixel_values to free GPU memory
             del frames, pixel_values

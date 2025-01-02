@@ -8,7 +8,16 @@ logger = logging.getLogger(__name__)
 # Directory to store downloaded files
 DATA_DIR = Path(__file__).parent / "data"
 DATA_DIR.mkdir(parents=True, exist_ok=True)
-EMBEDDINGS_DB_PATH = DATA_DIR / "embeddings.db"
+EMBEDDINGS_DB_PATH = DATA_DIR / "data.sqlite"
+
+def set_db_path(db_path: Path):
+    """
+    Allows external code to override the default EMBEDDINGS_DB_PATH.
+    Must be called before get_connection() or initialize_db() are used.
+    """
+    global EMBEDDINGS_DB_PATH
+    EMBEDDINGS_DB_PATH = db_path
+    logger.info(f"[CONCURRENT] Overriding EMBEDDINGS_DB_PATH -> {EMBEDDINGS_DB_PATH}")
 
 def get_connection():
     conn = sqlite3.connect(EMBEDDINGS_DB_PATH)
