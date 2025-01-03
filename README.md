@@ -40,9 +40,7 @@ conda install -c pytorch faiss-cpu=1.9.0
 cd dot/utils/torch3d/ && python setup.py install && cd ../../..
 ```
 
-<details>
 [Optional] Download watermark removal repo
 ```
 git clone https://github.com/l-comm/WatermarkRemoval.git
 ```
-</details>
