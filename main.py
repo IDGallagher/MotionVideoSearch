@@ -1,4 +1,5 @@
 # main.py
+import os
 import torch
 import typer
 import logging
@@ -7,7 +8,7 @@ from rich.logging import RichHandler
 from rich.console import Console
 from pathlib import Path
 from typing import Annotated, Optional
-from functions import store_video
+from functions import store_video, download_checkpoints
 from PIL import Image
 import torchvision.transforms as transforms
 import csv
@@ -141,10 +142,15 @@ def store(
     """
     Store videos from a directory and/or a CSV file into the vector DB.
     """
+
+    download_checkpoints()
+
     # 1. Handle concurrency: Decide if we override DB path and index path
     global INDEX_PATH  # We'll reassign if needed
 
     if debug:
+        if not os.path.exists('debug'):
+            os.makedirs('debug')
         logger.info("Debug mode is ON. Images and videos will be saved in the debug folder.")
     else:
         logger.info("Debug mode is OFF. Skipping saving debug frames and videos.")

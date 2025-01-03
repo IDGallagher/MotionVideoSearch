@@ -32,6 +32,39 @@ try:
 except ImportError:
     WATERMARK_REMOVAL_AVAILABLE = False
 
+def download_checkpoints():
+    """
+    Checks for each checkpoint file in the 'checkpoints' directory.
+    If it does not exist locally, downloads it from the provided URL.
+    """
+    os.makedirs("checkpoints", exist_ok=True)
+    
+    # List of (local_filename, url). Adjust as needed for each checkpoint.
+    files_to_download = [
+        ("cvo_raft_patch_8.pth", "https://huggingface.co/16lemoing/dot/resolve/main/cvo_raft_patch_8.pth"),
+        ("movi_f_raft_patch_4_alpha.pth", "https://huggingface.co/16lemoing/dot/resolve/main/movi_f_raft_patch_4_alpha.pth"),
+        ("movi_f_cotracker_patch_4_wind_8.pth", "https://huggingface.co/16lemoing/dot/resolve/main/movi_f_cotracker_patch_4_wind_8.pth"),
+        ("movi_f_cotracker2_patch_4_wind_8.pth", "https://huggingface.co/16lemoing/dot/resolve/main/movi_f_cotracker2_patch_4_wind_8.pth"),
+        ("movi_f_cotracker3_wind_60.pth", "https://huggingface.co/facebook/cotracker3/resolve/main/scaled_offline.pth"),
+        ("panning_movi_e_tapir.pth", "https://huggingface.co/16lemoing/dot/resolve/main/panning_movi_e_tapir.pth"),
+        ("panning_movi_e_plus_bootstapir.pth", "https://huggingface.co/16lemoing/dot/resolve/main/panning_movi_e_plus_bootstapir.pth"),
+    ]
+    
+    for filename, url in files_to_download:
+        local_path = os.path.join("checkpoints", filename)
+        
+        # Check if file already exists
+        if not os.path.isfile(local_path):
+            print(f"Downloading '{filename}' from {url}...")
+            response = requests.get(url, stream=True)
+            response.raise_for_status()  # Raise an error if download fails
+            
+            with open(local_path, 'wb') as f:
+                for chunk in response.iter_content(chunk_size=8192):
+                    f.write(chunk)
+            
+            print(f"Downloaded '{filename}' to {local_path}.")
+
 def save_pixel_values_as_video(pixel_values, output_path):
     """
     Save pixel values as a video file with a target FPS of 24.
