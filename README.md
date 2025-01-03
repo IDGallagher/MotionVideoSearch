@@ -7,7 +7,6 @@ git clone https://github.com/16lemoing/dot
 cd dot
 ```
 
-<details>
 <summary>Install dependencies.</summary>
 
 [Optional] Create a conda environment.
@@ -42,4 +41,6 @@ cd dot/utils/torch3d/ && python setup.py install && cd ../../..
 ```
 
 [Optional] Download watermark removal repo
+```
 git clone https://github.com/l-comm/WatermarkRemoval.git
+```
