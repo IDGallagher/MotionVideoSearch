@@ -229,34 +229,35 @@ def store(
     elif csv_file:
         logger.info(f"Processing videos from CSV file: {csv_file}")
 
-        total_entries = 0
         processed_entries = 0
 
         with open(csv_file, 'r', newline='', encoding='utf-8') as csvfile:
             reader = csv.DictReader(csvfile)
-            # Convert reader to list to count total entries (optional)
-            rows = list(reader)
-            total_entries = len(rows)
-            if start_entry > total_entries:
-                logger.error(f"start_entry {start_entry} exceeds the total number of CSV entries ({total_entries}).")
-                raise typer.Exit(code=1)
 
-            # Determine the range of rows to process
-            rows_to_process = rows[start_entry - 1:]  # 1-based index
+            # We keep track of the current row_number ourselves
+            row_number = 0
 
-            logger.info(f"Starting processing from entry {start_entry} out of {total_entries} total entries.")
+            for row in reader:
+                row_number += 1
 
-            for row_number, row in enumerate(rows_to_process, start=start_entry):
+                # If row_number is before our start_entry, skip it
+                if row_number < start_entry:
+                    continue
+                
+                logger.info(f"Procesing row {row_number}")
+
+                # From here on, we process the row
                 try:
-                    duration_seconds = parse_duration(row['duration'])
+                    duration_seconds = parse_duration(row.get('duration', 'PT0S'))
                 except Exception as e:
                     logger.warning(f"Failed to parse duration for video {row.get('url') or row.get('contentUrl')}: {e}")
                     duration_seconds = 0.0
 
+                # Build the video metadata
                 video_metadata = {
-                    'url': row.get('contentUrl') or row.get('url'),  # Handle different possible keys
+                    'url': row.get('contentUrl') or row.get('url'),
                     'duration_seconds': duration_seconds,
-                    'description': row.get('name') or row.get('description'),  # Handle different possible keys
+                    'description': row.get('name') or row.get('description'),
                     'db_id': None,  # Will be set in store_video
                     'saved_up_to': 0.0,
                 }
@@ -267,11 +268,11 @@ def store(
                     # Save updated FAISS index periodically or after each successful insertion
                     faiss.write_index(index, str(INDEX_PATH))
 
-                # Optional: Log progress every N entries
-                if processed_entries % 100 == 0:
-                    logger.info(f"Processed {processed_entries} entries from CSV.")
+                # Optional: if you need to stop after a certain number of lines,
+                # you can break here or you can keep going until the file ends.
 
         logger.info(f"Storage complete. {processed_entries} entries processed and FAISS index saved.")
+
 
     else:
         logger.error("Specify dir or csv!")
