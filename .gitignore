@@ -251,7 +251,6 @@ outputs
 wandb
 tmp
 /checkpoints/
-datasets/
 res.jpg
 corrected_image_color.jpg
 data.bin
