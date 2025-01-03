@@ -3,11 +3,11 @@
 ### Set Up Environment
 Clone the repository.
 ```
-git clone https://github.com/16lemoing/dot
-cd dot
+git clone https://github.com/IDGallagher/MotionVideoSearch
+cd MotionVideoSearch
 ```
 
-<summary>Install dependencies.</summary>
+### Install dependencies
 
 [Optional] Create a conda environment.
 ```
@@ -30,7 +30,7 @@ Install other dependencies.
 pip install tqdm matplotlib einops einshape scipy timm lmdb av mediapy typer imageio imageio-ffmpeg requests opencv-python
 
 ```
-Install faiss
+Install faiss https://github.com/facebookresearch/faiss
 ```
 conda install -c pytorch faiss-cpu=1.9.0
 ```
@@ -40,7 +40,9 @@ conda install -c pytorch faiss-cpu=1.9.0
 cd dot/utils/torch3d/ && python setup.py install && cd ../../..
 ```
 
+<details>
 [Optional] Download watermark removal repo
 ```
 git clone https://github.com/l-comm/WatermarkRemoval.git
 ```
+</details>
