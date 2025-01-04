@@ -17,7 +17,12 @@ conda activate mvs
 
 Install the [PyTorch and TorchVision](https://pytorch.org/get-started/locally/) versions which are compatible with your CUDA configuration.
 ```
-pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
+pip install torch==2.1.0 torchvision==0.16.0 torchaudio==2.1.0 --index-url https://download.pytorch.org/whl/cu118
+```
+
+[Optional] Install a version of xformers that works with your version of PyTorch
+```
+pip install xformers --index-url https://download.pytorch.org/whl/cu118
 ```
 
 Install ffmpeg 6.x

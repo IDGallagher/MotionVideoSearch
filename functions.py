@@ -234,6 +234,7 @@ def store_video(video_metadata, embedding_model, index, max_time=1.0, debug=Fals
             stream_reader.fill_buffer()
             (frames,) = stream_reader.pop_chunks()
             pixel_values = frames.float() / 255.0
+            pixel_values.to('cuda')
 
             if WATERMARK_REMOVAL_AVAILABLE:
                 res = find_watermark_tensor(pixel_values)
