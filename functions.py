@@ -158,9 +158,10 @@ def store_video(video_metadata, embedding_model, index, max_time=1.0, debug=Fals
     url = video_metadata['url']
     duration_seconds = video_metadata.get('duration_seconds')
     description = video_metadata.get('description')
+    row = video_metadata.get('row')
 
     # Add or retrieve video metadata from the database
-    db_video_metadata = add_video(url, duration_seconds, description)
+    db_video_metadata = add_video(url, duration_seconds, description, row)
     
     # Update the video_metadata dictionary with database values
     video_metadata.update({

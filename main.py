@@ -259,6 +259,7 @@ def store(
                     'duration_seconds': duration_seconds,
                     'description': row.get('name') or row.get('description'),
                     'db_id': None,  # Will be set in store_video
+                    'row': row_number,
                     'saved_up_to': 0.0,
                 }
 

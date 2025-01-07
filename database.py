@@ -34,7 +34,8 @@ def initialize_db():
             url TEXT UNIQUE NOT NULL,
             duration REAL NOT NULL,
             description TEXT,
-            saved_up_to REAL DEFAULT 0.0
+            saved_up_to REAL DEFAULT 0.0,
+            row INTEGER
         )
     """)
     
@@ -52,7 +53,7 @@ def initialize_db():
     conn.close()
     logger.info("SQLite database initialized with updated schema")
 
-def add_video(url, duration, description):
+def add_video(url, duration, description, row):
     """
     Adds a video to the database or retrieves it if already exists.
 
@@ -60,7 +61,7 @@ def add_video(url, duration, description):
         url (str): The URL of the video.
         duration (float): The duration of the video in seconds.
         description (str): A description of the video.
-
+        row (int): The csv row the video came from
     Returns:
         dict: A dictionary containing the video's metadata.
     """
@@ -68,9 +69,9 @@ def add_video(url, duration, description):
     cursor = conn.cursor()
     try:
         cursor.execute("""
-            INSERT INTO videos (url, duration, description)
-            VALUES (?, ?, ?)
-        """, (url, duration, description))
+            INSERT INTO videos (url, duration, description, row)
+            VALUES (?, ?, ?, ?)
+        """, (url, duration, description, row))
         conn.commit()
         video_db_id = cursor.lastrowid
         logger.debug(f"Added video {url} with DB ID {video_db_id}")
@@ -81,7 +82,8 @@ def add_video(url, duration, description):
             'url': url,
             'duration': duration,
             'description': description,
-            'saved_up_to': 0.0
+            'saved_up_to': 0.0,
+            'row': row
         }
     except sqlite3.IntegrityError:
         # Video already exists, fetch its metadata
@@ -107,7 +109,7 @@ def get_video_by_url(url):
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute("""
-        SELECT id, url, duration, description, saved_up_to
+        SELECT id, url, duration, description, saved_up_to, row
         FROM videos
         WHERE url = ?
     """, (url,))
@@ -115,7 +117,7 @@ def get_video_by_url(url):
     conn.close()
 
     if row:
-        keys = ['id', 'url', 'duration', 'description', 'saved_up_to']
+        keys = ['id', 'url', 'duration', 'description', 'saved_up_to', 'row']
         video_metadata = dict(zip(keys, row))
         logger.debug(f"Retrieved video metadata for URL {url}: {video_metadata}")
         return video_metadata
