@@ -3,6 +3,10 @@
 import torch
 import numpy as np
 from einops import rearrange
+import sys
+import os
+
+sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
 from dot.models import create_model
 
 ##########################################################################
@@ -137,6 +141,8 @@ def flow_to_color(flow_uv, clip_flow=None, convert_to_bgr=False):
 # DOT args and helper class
 ##########################################################################
 
+# dot_functions.py
+
 dot_args = {
     "model": "dot",
     "fit_to": 336,
@@ -147,13 +153,13 @@ dot_args = {
     "is_train": False,
     "worker_idx": 0,
     "num_workers": 2,
-    "estimator_config": "configs/raft_patch_8.json",
-    "estimator_path": "checkpoints/cvo_raft_patch_8.pth",
+    "estimator_config": os.path.join(os.path.dirname(__file__), "configs/raft_patch_8.json"),
+    "estimator_path": os.path.join(os.path.dirname(__file__), "checkpoints/cvo_raft_patch_8.pth"),
     "flow_mode": "direct",
-    "refiner_config": "configs/raft_patch_4_alpha.json",
-    "refiner_path": "checkpoints/movi_f_raft_patch_4_alpha.pth",
-    "tracker_config": "configs/cotracker_patch_4_wind_8.json",
-    "tracker_path": "checkpoints/movi_f_cotracker_patch_4_wind_8.pth",
+    "refiner_config": os.path.join(os.path.dirname(__file__), "configs/raft_patch_4_alpha.json"),
+    "refiner_path": os.path.join(os.path.dirname(__file__), "checkpoints/movi_f_raft_patch_4_alpha.pth"),
+    "tracker_config": os.path.join(os.path.dirname(__file__), "configs/cotracker_patch_4_wind_8.json"),
+    "tracker_path": os.path.join(os.path.dirname(__file__), "checkpoints/movi_f_cotracker_patch_4_wind_8.pth"),
     "sample_mode": "all",
     "interpolation_version": "torch3d",
     "inference_mode": "tracks_from_first_to_every_other_frame",

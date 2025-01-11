@@ -37,7 +37,9 @@ def download_checkpoints():
     Checks for each checkpoint file in the 'checkpoints' directory.
     If it does not exist locally, downloads it from the provided URL.
     """
-    os.makedirs("checkpoints", exist_ok=True)
+    filepath = os.path.dirname(__file__)
+    checkpoint_dir = os.path.join(filepath, "checkpoints")
+    os.makedirs(checkpoint_dir, exist_ok=True)
     
     # List of (local_filename, url). Adjust as needed for each checkpoint.
     files_to_download = [
@@ -51,7 +53,7 @@ def download_checkpoints():
     ]
     
     for filename, url in files_to_download:
-        local_path = os.path.join("checkpoints", filename)
+        local_path = os.path.join(checkpoint_dir, filename)
         
         # Check if file already exists
         if not os.path.isfile(local_path):
