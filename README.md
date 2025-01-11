@@ -15,14 +15,9 @@ conda create -n mvs python=3.9
 conda activate mvs
 ```
 
-Install the [PyTorch and TorchVision](https://pytorch.org/get-started/locally/) versions which are compatible with your CUDA configuration.
+Install the [PyTorch and TorchVision](https://pytorch.org/get-started/locally/) versions that are compatible with your CUDA configuration.
 ```
-pip install torch==2.1.0 torchvision==0.16.0 torchaudio==2.1.0 --index-url https://download.pytorch.org/whl/cu118
-```
-
-[Optional] Install a version of xformers that works with your version of PyTorch
-```
-pip install xformers --index-url https://download.pytorch.org/whl/cu118
+pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
 ```
 
 Install ffmpeg 6.x
@@ -38,11 +33,6 @@ pip install tqdm matplotlib einops einshape scipy timm lmdb av mediapy typer ima
 Install faiss https://github.com/facebookresearch/faiss
 ```
 conda install -c pytorch faiss-cpu=1.9.0
-```
-
-[Optional] Set up custom modules from [PyTorch3D](https://github.com/facebookresearch/pytorch3d) to increase speed and reduce memory consumption of interpolation operations.
-```
-cd dot/utils/torch3d/ && python setup.py install && cd ../../..
 ```
 
 [Optional] Download watermark removal repo
