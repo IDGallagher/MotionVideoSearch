@@ -1,5 +1,7 @@
 # nodes.py
 import os
+os.environ["KMP_DUPLICATE_LIB_OK"]="TRUE"
+
 import torch
 import faiss
 import logging
