@@ -31,6 +31,8 @@
   We have some ComfyUI nodes ready to be used with a pre-existing video database consisting of roughly 100,000 videos. You can get started using the following workflow:
   [MotionSearch](workflows/MotionSearch.json)
   
+  ![MotionSearch](https://github.com/user-attachments/assets/f1c1acb5-6c29-415e-9c68-86da0486ed75)
+
 ## Installation
 
 ### 1. Set Up Environment
