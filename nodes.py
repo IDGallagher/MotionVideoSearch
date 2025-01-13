@@ -153,7 +153,7 @@ class IG_MotionVideoSearch:
     RETURN_NAMES = ("url_1", "url_2", "url_3", "url_4", "url_5", "status")
     FUNCTION = "search"
 
-    CATEGORY = "Motion Video DB"  # Appears in ComfyUI under this category in the node menu
+    CATEGORY = "🐓 IG Motion Search Nodes"
 
     def search(self, image, starting_rank):
         """
@@ -280,7 +280,7 @@ class IG_MotionVideoFrame:
     RETURN_TYPES = ("IMAGE",)
     RETURN_NAMES = ("colored_motion_image",)
     FUNCTION = "apply"
-    CATEGORY = "Motion Video DB"
+    CATEGORY = "🐓 IG Motion Search Nodes"
 
     def apply(self, video_frames):
         """
