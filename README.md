@@ -27,6 +27,10 @@
   1. `IG_MotionVideoSearch`: Takes an image input and returns the top 5 ranked URLs from the FAISS index.
   2. `IG_MotionVideoFrame`: Converts 24 consecutive frames into a single “dot frame,” which encodes motion features in a color-coded image.
 
+## ComfyUI
+  We have some ComfyUI nodes ready to be used with a pre-existing video database consisting of roughly 100,000 videos. You can get started using the following workflow:
+  [MotionSearch](workflows/MotionSearch.json)
+  
 ## Installation
 
 ### 1. Set Up Environment
@@ -136,28 +140,6 @@ If you want to use the motion search in [ComfyUI](https://github.com/comfyanonym
 3. You should see two new nodes:
    - **IG_MotionVideoSearch**: Takes an image and returns URLs + ranks.
    - **IG_MotionVideoFrame**: Takes a stack of 24 frames and returns a single “dot frame.”
-
-## Repository Structure
-
-```
-├─ checkpoints/          # Checkpoints for the DOT motion model
-├─ configs/              # Model configuration files
-├─ data/                 # Default location for data.sqlite & index.faiss
-│  ├─ datasets/
-│  └─ temp/
-├─ debug/                # Debug output (if enabled)
-├─ dot/                  # DOT model code and configs
-├─ videos/               # Example video files (not in repo by default)
-├─ WatermarkRemoval/     # Optional submodule for removing watermarks
-├─ database.py           # Database interactions (SQLite)
-├─ dot_functions.py      # DOT model logic (motion extraction)
-├─ functions.py          # Core logic for storing and handling frames
-├─ main.py               # CLI entry point (Typer)
-├─ nodes.py              # ComfyUI node definitions
-├─ pyproject.toml        # Project metadata
-├─ README.md             # This README
-└─ requirements.txt      # Dependencies (for pip)
-```
 
 ## Contributing
 Contributions and suggestions are welcome! Feel free to open issues or pull requests for enhancements or bug fixes.
